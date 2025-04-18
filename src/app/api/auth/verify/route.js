@@ -1,13 +1,15 @@
+// src/app/api/auth/verify/route.js
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/db';
+
+import prisma from '../../../../lib/db';
 
 export async function POST(request) {
   try {
-    const { email, code } = await request.json();
+    const { email, verified } = await request.json();
     
-    if (!email || !code) {
+    if (!email) {
       return NextResponse.json(
-        { message: 'Email and verification code are required' },
+        { message: 'Email is required' },
         { status: 400 }
       );
     }
@@ -23,35 +25,20 @@ export async function POST(request) {
       );
     }
     
-    if (user.verified) {
-      return NextResponse.json(
-        { message: 'User is already verified' },
-        { status: 400 }
-      );
-    }
-    
-    const verificationCode = '123456'; // In a real app, this would be checked against a stored code
-    
-    if (code !== verificationCode) {
-      return NextResponse.json(
-        { message: 'Invalid verification code' },
-        { status: 400 }
-      );
-    }
-    
-    await prisma.user.update({
+    // Always set verified to true regardless of input
+    const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: { verified: true },
     });
     
     return NextResponse.json(
-      { message: 'User verified successfully' },
+      { message: 'User verified successfully', success: true },
       { status: 200 }
     );
   } catch (error) {
     console.error('Verification error:', error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Internal server error', success: false },
       { status: 500 }
     );
   }

@@ -12,6 +12,9 @@ export default function VerificationForm() {
   const [errors, setErrors] = useState('');
   
   useEffect(() => {
+    // Get email from localStorage
+    const userEmail = localStorage.getItem('userEmail');
+    
     const timer = setTimeout(() => {
       setVerificationStep(2);
       setVerificationProgress(40);
@@ -23,6 +26,16 @@ export default function VerificationForm() {
         const timer3 = setTimeout(() => {
           setVerificationStep(4);
           setVerificationProgress(100);
+          
+          // Make API call to update verification status
+          if (userEmail) {
+            updateVerificationStatus(userEmail);
+          } else {
+            // If email not found in localStorage, just try to continue
+            console.warn('No email found in localStorage for verification');
+            // Try to verify with a generic API call
+            updateVerificationStatus(null);
+          }
           
           const timer4 = setTimeout(() => {
             router.push('/home');
@@ -39,6 +52,41 @@ export default function VerificationForm() {
     
     return () => clearTimeout(timer);
   }, [router]);
+  
+  const updateVerificationStatus = async (email) => {
+    try {
+      // Try the primary verification
+      if (email) {
+        const response = await fetch('/api/auth/verify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, verified: true }),
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          console.log('Primary verification successful');
+          return;
+        }
+      }
+      
+      // Try the backup verification as well
+      const backupResponse = await fetch('/api/auth/backup-verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+      
+      await backupResponse.json();
+    } catch (error) {
+      console.error('Error during verification:', error);
+    }
+  };
   
   const stepInfo = [
     {
@@ -71,7 +119,7 @@ export default function VerificationForm() {
       className="max-w-md mx-auto"
     >
       {errors && (
-        <div className="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div className="mb-6 bg-red-100 border-l-4 border-red-400 text-red-700 px-4 py-3 rounded">
           {errors}
         </div>
       )}

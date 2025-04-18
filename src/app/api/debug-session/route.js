@@ -1,6 +1,7 @@
+// src/app/api/debug-session/route.js
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import prisma from '../../../../lib/db';
+import prisma from '../../../lib/db';
 
 export async function GET() {
   try {
@@ -18,7 +19,6 @@ export async function GET() {
       where: { email: session.user.email }
     });
     
-
     return NextResponse.json({
       authenticated: true,
       session: {

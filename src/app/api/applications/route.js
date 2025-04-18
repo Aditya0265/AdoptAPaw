@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import prisma from '@/lib/db';
-import { sendApplicationUpdate } from '@/lib/twilio';
+import prisma from '../../../lib/db';
+import { sendApplicationUpdate } from '../../../lib/twilio';
 
 export async function GET(request) {
   try {

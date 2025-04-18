@@ -1,127 +1,155 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { motion } from 'framer-motion';
-import { FiUser, FiMail, FiPhone, FiMapPin, FiUpload } from 'react-icons/fi';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { motion } from "framer-motion";
+import { FiUser, FiMail, FiPhone, FiMapPin, FiUpload } from "react-icons/fi";
 
 export default function RegisterForm() {
   const router = useRouter();
-  
+
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    password: '',
-    confirmPassword: '',
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    password: "",
+    confirmPassword: "",
   });
-  
+
   const [aadharImage, setAadharImage] = useState(null);
-  const [aadharPreview, setAadharPreview] = useState('');
+  const [aadharPreview, setAadharPreview] = useState("");
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  
+
+  const formatPhoneNumber = (phoneNumber) => {
+    // Remove all non-digit characters
+    const digits = phoneNumber.replace(/\D/g, "");
+
+    // If it doesn't start with country code, add +91
+    if (!phoneNumber.startsWith("+")) {
+      return `+91${digits}`;
+    }
+
+    // If it has a country code but not +91, replace it with +91
+    if (!phoneNumber.startsWith("+91")) {
+      return `+91${digits.substring(
+        digits.length > 10 ? digits.length - 10 : 0
+      )}`;
+    }
+
+    return phoneNumber;
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
-  
+
   const handleAadharChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setAadharImage(file);
       setAadharPreview(URL.createObjectURL(file));
-      
+
       if (errors.aadhar) {
-        setErrors(prev => ({ ...prev, aadhar: '' }));
+        setErrors((prev) => ({ ...prev, aadhar: "" }));
       }
     }
   };
-  
+
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = "Name is required";
     }
-    
+
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
+      newErrors.email = "Invalid email format";
     }
-    
+
+    // In RegisterForm.jsx - update the validateForm function
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
-    } else if (!/^\+?[0-9]{10,12}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'Invalid phone number';
+      newErrors.phone = "Phone number is required";
+    } else {
+      // Format the phone number to ensure it starts with +91
+      formData.phone = formatPhoneNumber(formData.phone);
     }
-    
+
     if (!formData.address.trim()) {
-      newErrors.address = 'Address is required';
+      newErrors.address = "Address is required";
     }
-    
+
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+      newErrors.password = "Password must be at least 8 characters";
     }
-    
+
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = "Passwords do not match";
     }
-    
+
     if (!aadharImage) {
-      newErrors.aadhar = 'Aadhaar image is required';
+      newErrors.aadhar = "Aadhaar image is required";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
+
+  // Add this to the handleSubmit function in RegisterForm.jsx
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append('name', formData.name);
-      formDataToSend.append('email', formData.email);
-      formDataToSend.append('phone', formData.phone);
-      formDataToSend.append('address', formData.address);
-      formDataToSend.append('password', formData.password);
-      formDataToSend.append('aadharImage', aadharImage);
-      
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
+      formDataToSend.append("name", formData.name);
+      formDataToSend.append("email", formData.email);
+      formDataToSend.append("phone", formData.phone);
+      formDataToSend.append("address", formData.address);
+      formDataToSend.append("password", formData.password);
+      formDataToSend.append("aadharImage", aadharImage);
+
+      const dataToSubmit = { ...formData };
+      dataToSubmit.phone = formatPhoneNumber(dataToSubmit.phone);
+
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
         body: formDataToSend,
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
+        throw new Error(data.message || "Registration failed");
       }
-      
-      router.push('/auth/verify');
+
+      // Store email in localStorage for verification
+      localStorage.setItem("userEmail", formData.email);
+
+      router.push("/auth/verify");
     } catch (error) {
-      setErrors(prev => ({ ...prev, general: error.message }));
+      setErrors((prev) => ({ ...prev, general: error.message }));
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -134,9 +162,11 @@ export default function RegisterForm() {
             {errors.general}
           </div>
         )}
-        
+
         <div>
-          <label htmlFor="name" className="input-label">Full Name</label>
+          <label htmlFor="name" className="input-label">
+            Full Name
+          </label>
           <div className="relative mt-1">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <FiUser className="h-5 w-5 text-gray-400" />
@@ -147,15 +177,21 @@ export default function RegisterForm() {
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className={`input-field pl-10 ${errors.name ? 'border-red-500' : ''}`}
+              className={`input-field pl-10 ${
+                errors.name ? "border-red-500" : ""
+              }`}
               placeholder="Enter your full name"
             />
           </div>
-          {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+          {errors.name && (
+            <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+          )}
         </div>
-        
+
         <div>
-          <label htmlFor="email" className="input-label">Email Address</label>
+          <label htmlFor="email" className="input-label">
+            Email Address
+          </label>
           <div className="relative mt-1">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <FiMail className="h-5 w-5 text-gray-400" />
@@ -166,15 +202,21 @@ export default function RegisterForm() {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className={`input-field pl-10 ${errors.email ? 'border-red-500' : ''}`}
+              className={`input-field pl-10 ${
+                errors.email ? "border-red-500" : ""
+              }`}
               placeholder="Enter your email"
             />
           </div>
-          {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+          {errors.email && (
+            <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+          )}
         </div>
-        
+
         <div>
-          <label htmlFor="phone" className="input-label">Phone Number</label>
+          <label htmlFor="phone" className="input-label">
+            Phone Number
+          </label>
           <div className="relative mt-1">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <FiPhone className="h-5 w-5 text-gray-400" />
@@ -185,15 +227,21 @@ export default function RegisterForm() {
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              className={`input-field pl-10 ${errors.phone ? 'border-red-500' : ''}`}
+              className={`input-field pl-10 ${
+                errors.phone ? "border-red-500" : ""
+              }`}
               placeholder="+91 XXXXX XXXXX"
             />
           </div>
-          {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
+          {errors.phone && (
+            <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+          )}
         </div>
-        
+
         <div>
-          <label htmlFor="address" className="input-label">Address</label>
+          <label htmlFor="address" className="input-label">
+            Address
+          </label>
           <div className="relative mt-1">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <FiMapPin className="h-5 w-5 text-gray-400" />
@@ -204,43 +252,61 @@ export default function RegisterForm() {
               value={formData.address}
               onChange={handleChange}
               rows="3"
-              className={`input-field pl-10 ${errors.address ? 'border-red-500' : ''}`}
+              className={`input-field pl-10 ${
+                errors.address ? "border-red-500" : ""
+              }`}
               placeholder="Enter your full address"
             ></textarea>
           </div>
-          {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address}</p>}
+          {errors.address && (
+            <p className="mt-1 text-sm text-red-600">{errors.address}</p>
+          )}
         </div>
-        
+
         <div>
-          <label htmlFor="password" className="input-label">Password</label>
+          <label htmlFor="password" className="input-label">
+            Password
+          </label>
           <input
             type="password"
             id="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
-            className={`input-field ${errors.password ? 'border-red-500' : ''}`}
+            className={`input-field ${errors.password ? "border-red-500" : ""}`}
             placeholder="Create a password"
           />
-          {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+          {errors.password && (
+            <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+          )}
         </div>
-        
+
         <div>
-          <label htmlFor="confirmPassword" className="input-label">Confirm Password</label>
+          <label htmlFor="confirmPassword" className="input-label">
+            Confirm Password
+          </label>
           <input
             type="password"
             id="confirmPassword"
             name="confirmPassword"
             value={formData.confirmPassword}
             onChange={handleChange}
-            className={`input-field ${errors.confirmPassword ? 'border-red-500' : ''}`}
+            className={`input-field ${
+              errors.confirmPassword ? "border-red-500" : ""
+            }`}
             placeholder="Confirm your password"
           />
-          {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
+          {errors.confirmPassword && (
+            <p className="mt-1 text-sm text-red-600">
+              {errors.confirmPassword}
+            </p>
+          )}
         </div>
-        
+
         <div>
-          <label htmlFor="aadhar" className="input-label">Upload Aadhaar Card</label>
+          <label htmlFor="aadhar" className="input-label">
+            Upload Aadhaar Card
+          </label>
           <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-primary-500 transition-colors duration-300">
             <div className="space-y-1 text-center">
               {aadharPreview ? (
@@ -258,7 +324,7 @@ export default function RegisterForm() {
                   <FiUpload className="h-full w-full" />
                 </div>
               )}
-              
+
               <div className="flex text-sm text-gray-600">
                 <label
                   htmlFor="aadhar"
@@ -279,9 +345,11 @@ export default function RegisterForm() {
               <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
             </div>
           </div>
-          {errors.aadhar && <p className="mt-1 text-sm text-red-600">{errors.aadhar}</p>}
+          {errors.aadhar && (
+            <p className="mt-1 text-sm text-red-600">{errors.aadhar}</p>
+          )}
         </div>
-        
+
         <div className="pt-4">
           <button
             type="submit"
@@ -289,12 +357,28 @@ export default function RegisterForm() {
             disabled={isLoading}
           >
             {isLoading ? (
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg
+                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
             ) : null}
-            {isLoading ? 'Registering...' : 'Register Account'}
+            {isLoading ? "Registering..." : "Register Account"}
           </button>
         </div>
       </form>

@@ -1,22 +1,61 @@
+"use client"
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import prisma from '../../lib/db';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import DogCard from '../../components/DogCard';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
-export default async function HomePage() {
-  const session = await getServerSession();
-  
-  if (!session) {
-    redirect('/auth/login');
-  }
-  
-  const dogs = await prisma.dog.findMany({
-    orderBy: {
-      createdAt: 'desc'
-    }
+export default function HomePage() {
+  const router = useRouter();
+  const { data: session, status } = useSession({
+    required: true,
+    onUnauthenticated() {
+      router.push('/auth/login');
+    },
   });
+  
+  const [dogs, setDogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    // Only fetch dogs when authenticated
+    if (status === 'authenticated') {
+      fetchDogs();
+    }
+  }, [status]);
+  
+  const fetchDogs = async () => {
+    try {
+      const response = await fetch('/api/dogs');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch dogs');
+      }
+      
+      const data = await response.json();
+      setDogs(data);
+    } catch (error) {
+      console.error('Error fetching dogs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  if (status === 'loading' || loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-grow flex items-center justify-center">
+          <div className="animate-spin h-10 w-10 border-4 border-primary-500 rounded-full border-t-transparent"></div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen flex flex-col">

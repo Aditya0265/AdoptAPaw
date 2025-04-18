@@ -47,42 +47,47 @@ export default function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
   
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // src/app/auth/login/page.jsx - update the handleSubmit function
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!validateForm()) {
+    return;
+  }
+  
+  setIsLoading(true);
+  
+  try {
+    const result = await signIn('credentials', {
+      redirect: false, // Important: prevent NextAuth's automatic redirect
+      email: formData.email,
+      password: formData.password,
+    });
     
-    if (!validateForm()) {
-      return;
+    if (result.error) {
+      throw new Error(result.error);
     }
     
-    setIsLoading(true);
+    // Added console log for debugging
+    console.log('Login successful, redirecting to home');
     
-    try {
-      const result = await signIn('credentials', {
-        redirect: false,
-        email: formData.email,
-        password: formData.password,
-      });
-      
-      if (result.error) {
-        throw new Error(result.error);
-      }
-      
-      if (formData.email === 'admin@adoptapaw.com') {
-        router.push('/admin');
-      } else {
-        router.push('/home');
-      }
-    } catch (error) {
-      setErrors(prev => ({ 
-        ...prev, 
-        general: error.message === 'Account is not verified' 
-          ? 'Your account is not verified. Please complete verification.'
-          : 'Invalid email or password. Please try again.' 
-      }));
-    } finally {
-      setIsLoading(false);
+    // Explicit redirection after successful login
+    if (formData.email === 'admin@adoptapaw.com') {
+      router.push('/admin');
+    } else {
+      router.push('/home');
     }
-  };
+  } catch (error) {
+    setErrors(prev => ({ 
+      ...prev, 
+      general: error.message === 'Account is not verified' 
+        ? 'Your account is not verified. Please complete verification.'
+        : 'Invalid email or password. Please try again.' 
+    }));
+  } finally {
+    setIsLoading(false);
+  }
+};
   
   return (
     <div className="min-h-screen flex flex-col">
