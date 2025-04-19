@@ -77,11 +77,11 @@ export default function Footer() {
           <div className="col-span-1">
             <h3 className="text-lg font-semibold mb-4">Contact Us</h3>
             <address className="text-gray-300 not-italic">
-              <p>AdoptAPaw Foundation</p>
-              <p>123 Pet Street, Bangalore</p>
-              <p>Karnataka, India 560001</p>
-              <p className="mt-2">Phone: +91 98765 43210</p>
-              <p>Email: info@adoptapaw.com</p>
+              <p>🐾 Blue Cross of Hyderabad</p>
+              <p>403/9, Road No. 35, Aditya Enclave, Venkatagiri, Jubilee Hills</p>
+              <p>Hyderabad, Telangana 500033</p>
+              <p className="mt-2">Phone: +91 8886676074</p>
+              <p className='mt-2'>Email: info@bluecrossofhyd.org</p>
             </address>
           </div>
         </div>

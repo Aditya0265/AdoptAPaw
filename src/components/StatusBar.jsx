@@ -63,7 +63,7 @@ export default function StatusBar({ currentStatus }) {
             />
           </div>
           
-          <div className="space-y-8">
+          <div className="space-y-8 flex flex-col items-center">
             {statusSteps.map((step, index) => {
               const isActive = currentStepIndex >= index;
               const isCurrentStep = currentStepIndex === index;
@@ -71,16 +71,14 @@ export default function StatusBar({ currentStatus }) {
               return (
                 <motion.div
                   key={step.id}
-                  className={`flex items-start ${
+                  className={`w-full flex flex-col items-center ${
                     index < statusSteps.length - 1 ? 'pb-8 relative' : ''
                   }`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.1 }}
                 >
-                  {index < statusSteps.length - 1 && (
-                    <div className="absolute top-0 left-7 w-px h-full bg-gray-200 z-0" />
-                  )}
+                 
                   
                   <div className={`flex items-center justify-center rounded-full w-14 h-14 flex-shrink-0 z-10 ${
                     isActive
@@ -92,7 +90,7 @@ export default function StatusBar({ currentStatus }) {
                     {step.icon}
                   </div>
                   
-                  <div className="ml-6">
+                  <div className="mt-4 text-center">
                     <h3 className={`font-bold text-lg ${
                       isActive ? 'text-gray-800' : 'text-gray-500'
                     }`}>

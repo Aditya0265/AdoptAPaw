@@ -1,10 +1,10 @@
-// src/app/api/auth/backup-verify/route.js
+
 import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/db';
 
 export async function POST(request) {
   try {
-    // Get the latest registered user
+    
     const latestUser = await prisma.user.findFirst({
       where: {
         verified: false
@@ -15,7 +15,7 @@ export async function POST(request) {
     });
     
     if (latestUser) {
-      // Update the user to be verified
+      
       await prisma.user.update({
         where: { id: latestUser.id },
         data: { verified: true }

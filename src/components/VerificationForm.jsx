@@ -12,7 +12,7 @@ export default function VerificationForm() {
   const [errors, setErrors] = useState('');
   
   useEffect(() => {
-    // Get email from localStorage
+  
     const userEmail = localStorage.getItem('userEmail');
     
     const timer = setTimeout(() => {
@@ -27,13 +27,13 @@ export default function VerificationForm() {
           setVerificationStep(4);
           setVerificationProgress(100);
           
-          // Make API call to update verification status
+          
           if (userEmail) {
             updateVerificationStatus(userEmail);
           } else {
-            // If email not found in localStorage, just try to continue
+         
             console.warn('No email found in localStorage for verification');
-            // Try to verify with a generic API call
+            
             updateVerificationStatus(null);
           }
           
@@ -55,7 +55,7 @@ export default function VerificationForm() {
   
   const updateVerificationStatus = async (email) => {
     try {
-      // Try the primary verification
+      
       if (email) {
         const response = await fetch('/api/auth/verify', {
           method: 'POST',
@@ -73,7 +73,7 @@ export default function VerificationForm() {
         }
       }
       
-      // Try the backup verification as well
+    
       const backupResponse = await fetch('/api/auth/backup-verify', {
         method: 'POST',
         headers: {

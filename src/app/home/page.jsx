@@ -22,7 +22,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    // Only fetch dogs when authenticated
+    
     if (status === 'authenticated') {
       fetchDogs();
     }
@@ -37,6 +37,7 @@ export default function HomePage() {
       }
       
       const data = await response.json();
+      console.log(data)
       setDogs(data);
     } catch (error) {
       console.error('Error fetching dogs:', error);

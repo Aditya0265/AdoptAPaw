@@ -1,4 +1,4 @@
-// src/app/api/auth/verify/route.js
+
 import { NextResponse } from 'next/server';
 
 import prisma from '../../../../lib/db';
@@ -25,7 +25,7 @@ export async function POST(request) {
       );
     }
     
-    // Always set verified to true regardless of input
+    
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: { verified: true },

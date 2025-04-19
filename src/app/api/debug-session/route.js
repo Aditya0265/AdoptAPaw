@@ -1,4 +1,4 @@
-// src/app/api/debug-session/route.js
+
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import prisma from '../../../lib/db';
@@ -14,7 +14,7 @@ export async function GET() {
       );
     }
     
-    // Look up the user in the database to check their actual role
+    
     const dbUser = await prisma.user.findUnique({
       where: { email: session.user.email }
     });
@@ -25,8 +25,8 @@ export async function GET() {
         user: {
           name: session.user.name,
           email: session.user.email,
-          role: session.user.role, // This may be undefined
-          verified: session.user.verified // This may be undefined
+          role: session.user.role, 
+          verified: session.user.verified 
         }
       },
       dbUser: dbUser ? {

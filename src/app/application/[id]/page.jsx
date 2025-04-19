@@ -31,7 +31,7 @@ export default function ApplicationPage({ params }) {
       if (status === 'loading') return;
       
       try {
-        // Fetch dog details
+        
         const dogResponse = await fetch(`/api/dogs/${params.id}`);
         
         if (!dogResponse.ok) {
@@ -41,7 +41,7 @@ export default function ApplicationPage({ params }) {
         const dogData = await dogResponse.json();
         setDog(dogData);
         
-        // Check if user already has an application for this dog
+        
         const applicationResponse = await fetch(`/api/applications?dogId=${params.id}`);
         
         if (applicationResponse.ok) {

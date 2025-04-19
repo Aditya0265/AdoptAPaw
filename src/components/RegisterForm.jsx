@@ -24,15 +24,15 @@ export default function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
 
   const formatPhoneNumber = (phoneNumber) => {
-    // Remove all non-digit characters
+    
     const digits = phoneNumber.replace(/\D/g, "");
 
-    // If it doesn't start with country code, add +91
+   
     if (!phoneNumber.startsWith("+")) {
       return `+91${digits}`;
     }
 
-    // If it has a country code but not +91, replace it with +91
+   
     if (!phoneNumber.startsWith("+91")) {
       return `+91${digits.substring(
         digits.length > 10 ? digits.length - 10 : 0
@@ -76,11 +76,11 @@ export default function RegisterForm() {
       newErrors.email = "Invalid email format";
     }
 
-    // In RegisterForm.jsx - update the validateForm function
+    
     if (!formData.phone.trim()) {
       newErrors.phone = "Phone number is required";
     } else {
-      // Format the phone number to ensure it starts with +91
+      
       formData.phone = formatPhoneNumber(formData.phone);
     }
 
@@ -106,7 +106,7 @@ export default function RegisterForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Add this to the handleSubmit function in RegisterForm.jsx
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -139,7 +139,7 @@ export default function RegisterForm() {
         throw new Error(data.message || "Registration failed");
       }
 
-      // Store email in localStorage for verification
+     
       localStorage.setItem("userEmail", formData.email);
 
       router.push("/auth/verify");

@@ -1,33 +1,48 @@
-// src/lib/twilio.js
+
 import twilio from 'twilio';
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const fromNumber = process.env.TWILIO_PHONE_NUMBER;
 
-// We'll set this to true to always use simulation mode
-const SIMULATE_SMS = true;
+
+const SIMULATE_SMS = process.env.SIMULATE_SMS === 'true';
+
+
+const TWILIO_VERIFIED_NUMBERS = process.env.TWILIO_VERIFIED_NUMBERS 
+  ? process.env.TWILIO_VERIFIED_NUMBERS.split(',') 
+  : [];
+
 let client;
 
 try {
-  if (!SIMULATE_SMS) {
+  if (accountSid && authToken && !SIMULATE_SMS) {
     client = twilio(accountSid, authToken);
+    console.log('Twilio client initialized successfully');
+  } else {
+    console.log(SIMULATE_SMS 
+      ? 'SMS simulation mode enabled' 
+      : 'Twilio credentials not provided, using simulation mode');
   }
 } catch (error) {
   console.error('Failed to initialize Twilio client:', error);
 }
 
-// Helper function to format phone numbers
+/**
+ 
+ * @param {string} phoneNumber 
+ * @returns {string} 
+ */
 function formatPhoneNumber(phoneNumber) {
-  // Remove all non-digit characters
+  
   const digits = phoneNumber.replace(/\D/g, '');
   
-  // If it doesn't start with country code, add +91
+  
   if (!phoneNumber.startsWith('+')) {
     return `+91${digits}`;
   }
   
-  // If it has a country code but not +91, replace it with +91
+  
   if (!phoneNumber.startsWith('+91')) {
     return `+91${digits.substring(digits.length > 10 ? digits.length - 10 : 0)}`;
   }
@@ -35,29 +50,55 @@ function formatPhoneNumber(phoneNumber) {
   return phoneNumber;
 }
 
+/**
+ 
+ * @param {string} to 
+ * @param {string} message 
+ * @returns {Promise<Object>} 
+ */
 export async function sendSMS(to, message) {
-  // Format the phone number to always use +91
+  
   const formattedPhone = formatPhoneNumber(to);
   
-  if (SIMULATE_SMS || !client) {
+
+  const isFreeVerifiedNumber = TWILIO_VERIFIED_NUMBERS.includes(formattedPhone);
+  const shouldSimulate = SIMULATE_SMS || 
+                        !client || 
+                        (TWILIO_VERIFIED_NUMBERS.length > 0 && !isFreeVerifiedNumber);
+  
+
+  if (shouldSimulate) {
     console.log(`SIMULATED SMS to ${formattedPhone}: ${message}`);
     return { success: true, simulated: true };
   }
 
   try {
+    console.log(`Attempting to send SMS to ${formattedPhone}`);
     const result = await client.messages.create({
       body: message,
       from: fromNumber,
       to: formattedPhone
     });
     
+    console.log(`SMS sent successfully, SID: ${result.sid}`);
     return { success: true, messageId: result.sid };
   } catch (error) {
     console.error('Failed to send SMS:', error);
-    return { success: false, error: error.message, simulated: true };
+
+    console.log(`SIMULATED SMS (after error) to ${formattedPhone}: ${message}`);
+    return { 
+      success: false, 
+      simulated: true, 
+      error: error.message 
+    };
   }
 }
 
+/**
+ 
+ * @param {string} phoneNumber 
+ * @returns {Promise<number>} 
+ */
 export async function sendVerificationCode(phoneNumber) {
   const code = Math.floor(100000 + Math.random() * 900000);
   const message = `Your AdoptAPaw verification code is: ${code}`;
@@ -67,6 +108,13 @@ export async function sendVerificationCode(phoneNumber) {
   return code;
 }
 
+/**
+
+ * @param {string} phoneNumber 
+ * @param {string} status 
+ * @param {string} dogName 
+ * @returns {Promise<Object>} 
+ */
 export async function sendApplicationUpdate(phoneNumber, status, dogName) {
   let message;
   

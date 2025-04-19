@@ -37,7 +37,7 @@ export const authOptions = {
           throw new Error("Account is not verified");
         }
 
-        // Return all user properties including the role
+       
         return {
           id: user.id,
           name: user.name,
@@ -50,7 +50,7 @@ export const authOptions = {
   ],
   callbacks: {
     async jwt({ token, user }) {
-      // Ensure user info is added to the token
+     
       if (user) {
         console.log("Setting JWT token with user:", user);
         token.id = user.id;
@@ -60,7 +60,7 @@ export const authOptions = {
       return token;
     },
     async session({ session, token }) {
-      // Ensure token info is added to the session
+     
       console.log("Setting session with token:", token);
       if (session.user) {
         session.user.id = token.id;

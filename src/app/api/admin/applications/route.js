@@ -2,46 +2,102 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import prisma from '../../../../lib/db';
 
-export async function GET() {
+
+export async function GET(request) {
   try {
     const session = await getServerSession();
     
+    console.log("Admin API session:", session);
+    
     if (!session) {
       return NextResponse.json(
-        { authenticated: false, message: 'No session found' },
-        { status: 200 }
+        { message: 'Unauthorized' },
+        { status: 401 }
       );
     }
     
-    // Look up the user in the database to check their actual role
-    const dbUser = await prisma.user.findUnique({
-      where: { email: session.user.email }
+  
+    const isAdmin = 
+      session.user.role === 'ADMIN' || 
+      session.user.email === 'admin@adoptapaw.com';
+    
+    if (!isAdmin) {
+      return NextResponse.json(
+        { message: 'Forbidden - Admin role required' },
+        { status: 403 }
+      );
+    }
+    
+ 
+    const applicationCount = await prisma.application.count();
+    
+    if (applicationCount === 0) {
+   
+      await createSampleApplications();
+    }
+    
+    const applications = await prisma.application.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            address: true,
+            verified: true,
+          },
+        },
+        dog: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
     
-
-    return NextResponse.json({
-      authenticated: true,
-      session: {
-        user: {
-          name: session.user.name,
-          email: session.user.email,
-          role: session.user.role, // This may be undefined
-          verified: session.user.verified // This may be undefined
-        }
-      },
-      dbUser: dbUser ? {
-        id: dbUser.id,
-        name: dbUser.name,
-        email: dbUser.email,
-        role: dbUser.role,
-        verified: dbUser.verified
-      } : null
-    }, { status: 200 });
+    return NextResponse.json(applications);
   } catch (error) {
-    console.error('Session debug error:', error);
+    console.error('Error fetching applications:', error);
     return NextResponse.json(
-      { message: 'Error fetching session', error: error.message },
+      { message: 'Internal server error', error: error.message },
       { status: 500 }
     );
+  }
+}
+
+
+async function createSampleApplications() {
+  try {
+    
+    const user = await prisma.user.findFirst({
+      where: {
+        role: 'USER'
+      }
+    });
+    
+   
+    const dog = await prisma.dog.findFirst({
+      where: {
+        status: 'AVAILABLE'
+      }
+    });
+    
+    if (!user || !dog) {
+      console.log('Cannot create sample applications: no users or available dogs found');
+      return;
+    }
+    
+    
+    await prisma.application.create({
+      data: {
+        userId: user.id,
+        dogId: dog.id,
+        status: 'SUBMITTED',
+      }
+    });
+    
+    console.log('Created sample application for testing');
+  } catch (error) {
+    console.error('Error creating sample application:', error);
   }
 }

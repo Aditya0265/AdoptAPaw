@@ -22,7 +22,7 @@ import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 
 export default function AdminPanel() {
-  // Add these state variables after the existing state variables
+
   const [newDog, setNewDog] = useState({
     name: "",
     breed: "",
@@ -32,11 +32,22 @@ export default function AdminPanel() {
     contactNumber: "",
     ownerName: "",
     status: "AVAILABLE",
-    imageUrl: "/images/dog-placeholder.jpg", // Default placeholder image
+    imageUrl: "/images/dog-placeholder.jpg",
   });
   const [isAddingDog, setIsAddingDog] = useState(false);
+  const [dogImage, setDogImage] = useState(null);
+  const [dogImagePreview, setDogImagePreview] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [actionSuccess, setActionSuccess] = useState(false);
 
-  // Add these handler functions before the return statement
+  const handleDogImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setDogImage(file);
+      setDogImagePreview(URL.createObjectURL(file));
+    }
+  };
+ 
   const handleDogInputChange = (e) => {
     const { name, value } = e.target;
     setNewDog((prev) => ({ ...prev, [name]: value }));
@@ -47,19 +58,33 @@ export default function AdminPanel() {
     setIsAddingDog(true);
 
     try {
+  
+      const formData = new FormData();
+      formData.append("name", newDog.name);
+      formData.append("breed", newDog.breed);
+      formData.append("age", newDog.age);
+      formData.append("gender", newDog.gender);
+      formData.append("location", newDog.location);
+      formData.append("contactNumber", newDog.contactNumber);
+      formData.append("ownerName", newDog.ownerName);
+      formData.append("status", newDog.status);
+
+      if (dogImage) {
+        formData.append("dogImage", dogImage);
+      } else {
+        formData.append("imageUrl", "/images/dog-placeholder.jpg");
+      }
+
       const response = await fetch("/api/admin/dogs", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newDog),
+        body: formData, 
       });
 
       if (!response.ok) {
         throw new Error("Failed to add dog");
       }
 
-      // Reset form
+      
       setNewDog({
         name: "",
         breed: "",
@@ -71,6 +96,10 @@ export default function AdminPanel() {
         status: "AVAILABLE",
         imageUrl: "/images/dog-placeholder.jpg",
       });
+      setDogImage(null);
+      setDogImagePreview("");
+
+      
 
       setSuccessMessage("Dog added successfully");
       setTimeout(() => setSuccessMessage(""), 3000);
@@ -108,7 +137,7 @@ export default function AdminPanel() {
 
       console.log("Admin page - session:", session);
 
-      // Special admin check - if this email is admin@adoptapaw.com, consider them an admin
+      
       const isAdmin =
         session?.user?.role === "ADMIN" ||
         session?.user?.email === "admin@adoptapaw.com";
@@ -123,53 +152,103 @@ export default function AdminPanel() {
     checkAdmin();
   }, [session, status, router]);
 
+  const showSuccessMessage = (action) => {
+    setActionSuccess(true);
+    setSuccessMessage(`Successfully ${action} application`);
+
+    setTimeout(() => {
+      setActionSuccess(false);
+      closeModal();
+    }, 1500);
+  };
+
   const fetchApplications = async () => {
     setLoading(true);
+    setError(null);
 
     try {
-      const response = await fetch("/api/admin/applications");
+     
+      const response = await fetch(`/api/admin/applications?t=${Date.now()}`, {
+        headers: {
+          "Cache-Control": "no-cache",
+        },
+      });
+
+      console.log("Applications response status:", response.status);
 
       if (!response.ok) {
-        throw new Error("Failed to fetch applications");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch applications");
       }
 
       const data = await response.json();
-      setApplications(data);
+      console.log(`Fetched ${data.length} applications`);
+      setApplications(data || []);
     } catch (err) {
       setError(err.message);
-      console.error(err);
+      console.error("Error fetching applications:", err);
+      
+      setApplications([]);
     } finally {
       setLoading(false);
     }
   };
 
+  
   const handleStatusChange = async (id, newStatus, visitDate = null) => {
     try {
+      console.log(`Updating application ${id} to status ${newStatus}`);
+      setError(null);
+
+      
+      const requestBody = {
+        status: newStatus,
+      };
+
+     
+      if (newStatus === "HOME_VISIT_SCHEDULED" && visitDate) {
+        requestBody.homeVisitDate = visitDate;
+      } else if (newStatus === "FINAL_VISIT_SCHEDULED" && visitDate) {
+        requestBody.finalVisitDate = visitDate;
+      }
+
+      console.log("Request body:", requestBody);
+
       const response = await fetch(`/api/admin/applications/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          status: newStatus,
-          ...(newStatus === "HOME_VISIT_SCHEDULED" && {
-            homeVisitDate: visitDate,
-          }),
-          ...(newStatus === "FINAL_VISIT_SCHEDULED" && {
-            finalVisitDate: visitDate,
-          }),
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        throw new Error("Failed to update application status");
+        console.error("Error response:", responseData);
+        throw new Error(
+          responseData.message || "Failed to update application status"
+        );
+      } else {
+        successMessage && (
+          <div className="mb-6 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md">
+            {successMessage}
+          </div>
+        );
       }
 
+      console.log("Success response:", responseData);
+
+      
+      setSuccessMessage(`Application status updated to ${newStatus}`);
+      setTimeout(() => setSuccessMessage(""), 3000);
+
+     
       await fetchApplications();
       closeModal();
     } catch (err) {
       setError(err.message);
-      console.error(err);
+      console.error("Error updating status:", err);
     }
   };
 
@@ -191,6 +270,7 @@ export default function AdminPanel() {
   };
 
   const handleCompleteHomeVisit = async (id) => {
+    console.log("Completing home visit for application:", id);
     await handleStatusChange(id, "HOME_VISIT_COMPLETED");
   };
 
@@ -206,29 +286,40 @@ export default function AdminPanel() {
   };
 
   const handleCompleteAdoption = async (id) => {
+    console.log("Completing adoption for application:", id);
     await handleStatusChange(id, "COMPLETED");
   };
-
   const handleRejectApplication = async (id) => {
+    console.log("Rejecting application:", id);
     await handleStatusChange(id, "REJECTED");
   };
 
-  const handleModalSubmit = (e) => {
+  const handleModalSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
 
-    if (modalType === "homeVisit") {
-      handleStatusChange(
-        selectedApplication.id,
-        "HOME_VISIT_SCHEDULED",
-        modalFormData.homeVisitDate
-      );
-    } else if (modalType === "finalVisit") {
-      handleStatusChange(
-        selectedApplication.id,
-        "FINAL_VISIT_SCHEDULED",
-        modalFormData.finalVisitDate
-      );
+    try {
+      if (modalType === "homeVisit") {
+        await handleStatusChange(
+          selectedApplication.id,
+          "HOME_VISIT_SCHEDULED",
+          modalFormData.homeVisitDate
+        );
+      } else if (modalType === "finalVisit") {
+        await handleStatusChange(
+          selectedApplication.id,
+          "FINAL_VISIT_SCHEDULED",
+          modalFormData.finalVisitDate
+        );
+      }
+    } catch (error) {
+      setError(`Failed to update application: ${error.message}`);
+     
+      return;
     }
+
+   
+    closeModal();
   };
 
   const closeModal = () => {
@@ -246,20 +337,22 @@ export default function AdminPanel() {
     setModalFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Filter applications
-  const filteredApplications = applications && applications.length > 0 
-  ? applications.filter((app) => {
-      const matchesSearch = 
-        app.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.dog.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.user.phone.includes(searchTerm) ||
-        app.user.address.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
-      
-      return matchesSearch && matchesStatus;
-    })
-  : [];
+  
+  const filteredApplications =
+    applications && applications.length > 0
+      ? applications.filter((app) => {
+          const matchesSearch =
+            app.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            app.dog.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            app.user.phone.includes(searchTerm) ||
+            app.user.address.toLowerCase().includes(searchTerm.toLowerCase());
+
+          const matchesStatus =
+            statusFilter === "all" || app.status === statusFilter;
+
+          return matchesSearch && matchesStatus;
+        })
+      : [];
 
   const getStatusBadge = (status) => {
     const statusMap = {
@@ -461,6 +554,55 @@ export default function AdminPanel() {
                       <option value="AVAILABLE">Available</option>
                       <option value="ADOPTED">Adopted</option>
                     </select>
+                  </div>
+
+                  <div className="flex justify-center">
+                    <div className="col-span-2">
+                      <label htmlFor="dogImage" className="input-label">
+                        Dog Image
+                      </label>
+                      <div className="mt-1 flex items-center space-x-5">
+                        <div className="flex-shrink-0 h-20 w-20 bg-gray-100 rounded-md overflow-hidden">
+                          {dogImagePreview ? (
+                            <img
+                              src={dogImagePreview}
+                              alt="Dog preview"
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center text-gray-400">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="40"
+                                height="40"
+                                fill="currentColor"
+                                viewBox="0 0 16 16"
+                              >
+                                <path d="M3 4.5a.5.5 0 0 1 1 0v9a.5.5 0 0 1-1 0v-9zm1-.5a1 1 0 0 0-1 1v9a1 1 0 0 0 2 0v-9a1 1 0 0 0-1-1zm10.336 0a.5.5 0 0 0-.5.5v1.293l-.647-.647a.5.5 0 1 0-.707.707l.647.647-9.393 9.393a.5.5 0 1 0 .707.707l9.393-9.393.647.647a.5.5 0 1 0 .707-.707l-.647-.647V4.5a.5.5 0 0 0-.5-.5H4.334a.5.5 0 0 0 0 1h6.086v6H5.5a.5.5 0 0 0 0 1h5.086V13a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1V5.5a.5.5 0 0 0-.5-.5h-2.751z" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                        <input
+                          type="file"
+                          id="dogImage"
+                          name="dogImage"
+                          accept="image/*"
+                          onChange={handleDogImageChange}
+                          className="hidden"
+                        />
+                        <label
+                          htmlFor="dogImage"
+                          className="btn-secondary cursor-pointer"
+                        >
+                          {dogImage ? "Change Image" : "Upload Image"}
+                        </label>
+                        <span className="text-xs text-gray-500">
+                          {!dogImage &&
+                            "If no image is uploaded, a placeholder will be used."}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
