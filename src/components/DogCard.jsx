@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { FiMapPin, FiPhone, FiUser, FiCalendar, FiInfo } from 'react-icons/fi';
 
-export default function DogCard({ dog }) {
+export default function DogCard({ dog, isAdmin }) {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -63,20 +63,31 @@ export default function DogCard({ dog }) {
           <span>{dog.contactNumber}</span>
         </div>
 
-        {dog.status === 'AVAILABLE' ? (
-          <Link
-            href={`/application/${dog.id}`}
-            className="btn-primary w-full text-center mt-0 block"
-          >
-            Adopt Me
-          </Link>
-        ) : (
+        {isAdmin ? (
+       
           <button
             disabled
             className="w-full py-2 px-6 bg-gray-300 text-gray-500 font-semibold rounded-lg cursor-not-allowed mt-0"
           >
-            Already Adopted
+            {dog.status === 'AVAILABLE' ? 'Available' : 'Adopted'}
           </button>
+        ) : (
+    
+          dog.status === 'AVAILABLE' ? (
+            <Link
+              href={`/application/${dog.id}`}
+              className="btn-primary w-full text-center mt-0 block"
+            >
+              Adopt Me
+            </Link>
+          ) : (
+            <button
+              disabled
+              className="w-full py-2 px-6 bg-gray-300 text-gray-500 font-semibold rounded-lg cursor-not-allowed mt-0"
+            >
+              Already Adopted
+            </button>
+          )
         )}
       </div>
     </motion.div>

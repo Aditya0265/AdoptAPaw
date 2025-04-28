@@ -72,7 +72,6 @@ export async function POST(request) {
       await sendVerificationCode(phone);
     } catch (error) {
       console.error('Error sending verification code:', error);
-      // Continue with registration even if SMS fails
     }
     
     return NextResponse.json(

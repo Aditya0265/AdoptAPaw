@@ -313,7 +313,7 @@ export default function ApplicationPage({ params }) {
                             })}
                           </p>
                           <p className="text-gray-600">
-                            <strong>Address:</strong> AdoptAPaw Foundation, 123 Pet Street, Bangalore, Karnataka, India 560001
+                            <strong>Address:</strong> Blue Cross of Hyderabad 403/9, Road No. 35, Aditya Enclave, Venkatagiri, Jubilee Hills, Hyderabad, Telangana 500033
                           </p>
                         </div>
                       )}
