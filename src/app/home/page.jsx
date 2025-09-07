@@ -1,13 +1,12 @@
+
 "use client"
-import { getServerSession } from 'next-auth';
-import { redirect } from 'next/navigation';
-import prisma from '../../lib/db';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
-import DogCard from '../../components/DogCard';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import Chatbot from '../../components/Chatbot';
+import DogCard from '../../components/DogCard';
+import Footer from '../../components/Footer';
+import Header from '../../components/Header';
 
 export default function HomePage() {
   const router = useRouter();
@@ -59,7 +58,7 @@ export default function HomePage() {
     }
   };
   
-  // Apply filters to dogs
+  
   const filteredDogs = dogs.filter(dog => {
     const matchesSearch = 
       dog.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -207,6 +206,9 @@ export default function HomePage() {
           )}
         </div>
       </main>
+      
+    
+      <Chatbot />
       
       <Footer />
     </div>

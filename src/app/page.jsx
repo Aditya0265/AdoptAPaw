@@ -1,10 +1,9 @@
-import Link from 'next/link';
-import Image from 'next/image';
 import { getServerSession } from 'next-auth';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import Header from '../components/Header';
 import Footer from '../components/Footer';
+import Header from '../components/Header';
 import HeroSection from '../components/HeroSection';
 
 export default async function LandingPage() {
